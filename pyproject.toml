@@ -1,0 +1,4 @@
+# deps + tool config
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
