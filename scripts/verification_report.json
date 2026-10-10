@@ -1,0 +1,123 @@
+{
+  "generated_at": "2026-10-10T19:11:29.550737+00:00",
+  "test_ip": "8.8.8.8",
+  "results": [
+    {
+      "test_id": "V1",
+      "name": "Shodan /shodan/host/{ip}",
+      "passed": true,
+      "status_code": 200,
+      "detail": "Returned 19 top-level fields",
+      "sample_fields": [
+        "area_code",
+        "asn",
+        "city",
+        "country_code",
+        "country_name",
+        "data",
+        "domains",
+        "hostnames",
+        "ip",
+        "ip_str",
+        "isp",
+        "last_update",
+        "latitude",
+        "longitude",
+        "org"
+      ],
+      "timestamp": "2026-10-10T19:11:25.586283+00:00"
+    },
+    {
+      "test_id": "V2",
+      "name": "Shodan InternetDB (no auth)",
+      "passed": true,
+      "status_code": 200,
+      "detail": "Returned fields: cpes, hostnames, ip, ports, tags, vulns",
+      "sample_fields": [
+        "cpes",
+        "hostnames",
+        "ip",
+        "ports",
+        "tags",
+        "vulns"
+      ],
+      "timestamp": "2026-10-10T19:11:26.888089+00:00"
+    },
+    {
+      "test_id": "V3",
+      "name": "Shodan rate limit (1 req/sec)",
+      "passed": false, 
+      "status_code": 200,
+      "detail": "Expected 429, got 200",
+      "sample_fields": [],
+      "timestamp": "2026-10-10T19:11:28.294478+00:00",
+      "raw_preview": "{\"region_code\": \"QLD\", \"tags\": [\"vpn\"], \"ip\": 16843009, \"area_code\": null, \"domains\": [\"independencia.com.mx\", \"one.one\", \"coned.com\"], \"hostnames\": [\"m020-iwlc.coned.com\", \"pymefectivo.web.independencia.com.mx\", \"one.one.one.one\"], \"country_code\": \"AU\", \"org\": \"APNIC Research and Development\", \"data\": [{\"asn\": \"AS13335\", \"hash\": -1124387064, \"os\": null, \"timestamp\": \"2026-10-10T14:08:21.210242\", \"isp\": \"Cloudflare, Inc.\", \"transport\": \"tcp\", \"_shodan\": {\"region\": \"na\", \"module\": \"dns-tcp\", \"ptr"
+    },
+    {
+      "test_id": "V4",
+      "name": "VirusTotal /api/v3/ip_addresses/{ip}",
+      "passed": true,
+      "status_code": 200,
+      "detail": "Returned 21 attribute fields",
+      "sample_fields": [
+        "as_owner",
+        "asn",
+        "continent",
+        "country",
+        "crowdsourced_context",
+        "first_seen_date",
+        "jarm",
+        "last_analysis_date",
+        "last_analysis_results",
+        "last_analysis_stats",
+        "last_https_certificate",
+        "last_https_certificate_date",
+        "last_modification_date",
+        "network",
+        "rdap",
+        "regional_internet_registry",
+        "reputation",
+        "tags",
+        "total_votes",
+        "whois"
+      ],
+      "timestamp": "2026-10-10T19:11:28.882860+00:00"
+    },
+    {
+      "test_id": "V5",
+      "name": "VT free tier excludes port/vuln data",
+      "passed": true,
+      "status_code": 200,
+      "detail": "Confirmed: no port_info or vulnerabilities fields present",
+      "sample_fields": [],
+      "timestamp": "2026-10-10T19:11:28.885238+00:00"
+    },
+    {
+      "test_id": "V6",
+      "name": "IPinfo Lite /lite/{ip}",
+      "passed": true,
+      "status_code": 200,
+      "detail": "Returned fields: as_domain, as_name, asn, continent, continent_code, country, country_code, ip",
+      "sample_fields": [
+        "as_domain",
+        "as_name",
+        "asn",
+        "continent",
+        "continent_code",
+        "country",
+        "country_code",
+        "ip"
+      ],
+      "timestamp": "2026-10-10T19:11:29.211504+00:00"
+    },
+    {
+      "test_id": "V7",
+      "name": "IPinfo invalid token error shape",
+      "passed": true,
+      "status_code": 403,
+      "detail": "Correctly rejected with 403",
+      "sample_fields": [],
+      "timestamp": "2026-10-10T19:11:29.516080+00:00"
+    }
+  ]
+}
