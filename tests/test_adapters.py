@@ -265,3 +265,175 @@ def test_shodan_internetdb_rejects_unexpected_payload():
     assert result.status == "error"
     assert result.error_code == "unexpected_payload"
     assert result.normalized_data == {}
+
+from panoptes.providers.shodan import ShodanHostProvider
+
+
+SHODAN_HOST_PAYLOAD = {
+    "ip_str": "8.8.8.8",
+    "asn": "AS15169",
+    "org": "Google LLC",
+    "isp": "Google LLC",
+    "country_code": "US",
+    "country_name": "United States",
+    "city": "Mountain View",
+    "hostnames": ["dns.google"],
+    "domains": ["dns.google"],
+    "ports": [443, 53],
+    "tags": [],
+    "last_update": "2026-10-10T14:08:21.210242",
+    "data": [
+        {
+            "port": 53,
+            "transport": "udp",
+            "product": "Google DNS",
+            "timestamp": "2026-10-10T14:08:21.210242",
+            "_shodan": {"module": "dns-udp"},
+        },
+        {
+            "port": 443,
+            "transport": "tcp",
+            "timestamp": "2026-10-09T08:00:00.000000",
+        },
+        "not-a-banner",
+    ],
+}
+
+
+def test_shodan_host_normalizes_fields():
+    provider = ShodanHostProvider(api_key="test-key")
+
+    normalized = provider.normalize(SHODAN_HOST_PAYLOAD)
+
+    assert normalized["ip_address"] == "8.8.8.8"
+    assert normalized["asn"] == "AS15169"
+    assert normalized["organization"] == "Google LLC"
+    assert normalized["country_code"] == "US"
+    assert normalized["hostnames"] == ["dns.google"]
+    assert normalized["domains"] == ["dns.google"]
+    assert normalized["ports"] == [53, 443]
+    assert len(normalized["services"]) == 2
+    assert normalized["services"][0] == {
+        "port": 53,
+        "transport": "udp",
+        "product": "Google DNS",
+        "version": None,
+        "module": "dns-udp",
+        "observed_at": "2026-10-10T14:08:21.210242",
+    }
+    assert normalized["services"][1]["product"] is None
+    assert normalized["services"][1]["module"] is None
+
+
+def test_shodan_host_normalize_tolerates_missing_and_malformed_fields():
+    provider = ShodanHostProvider(api_key="test-key")
+
+    normalized = provider.normalize({
+        "ip_str": "8.8.8.8",
+        "hostnames": None,
+        "data": {"unexpected": "shape"},
+        "vulns": {"CVE-2024-12345": {"cvss": 7.5}},
+    })
+
+    assert normalized["hostnames"] == []
+    assert normalized["services"] == []
+    assert normalized["ports"] == []
+    assert normalized["organization"] is None
+    assert normalized["vulnerability_identifiers"] == ["CVE-2024-12345"]
+
+
+def test_shodan_host_derives_ports_from_banners_when_missing():
+    provider = ShodanHostProvider(api_key="test-key")
+
+    normalized = provider.normalize({
+        "ip_str": "8.8.8.8",
+        "data": [{"port": 22}, {"port": 80}, {"port": 22}],
+    })
+
+    assert normalized["ports"] == [22, 80]
+
+
+def test_shodan_host_lookup_success():
+    client = Mock()
+    client.get_json.return_value = ("success", SHODAN_HOST_PAYLOAD, None)
+
+    provider = ShodanHostProvider(api_key="test-key", client=client)
+    result = provider.lookup("8.8.8.8")
+
+    assert result.status == "success"
+    assert result.provider == "shodan_host"
+    assert result.normalized_data["ip_address"] == "8.8.8.8"
+    assert result.raw_data == SHODAN_HOST_PAYLOAD
+    assert result.expires_at is not None
+    assert result.cached is False
+
+    url = client.get_json.call_args.args[0]
+    assert url == "https://api.shodan.io/shodan/host/8.8.8.8"
+    assert client.get_json.call_args.kwargs["params"] == {"key": "test-key"}
+
+
+def test_shodan_host_missing_api_key_returns_auth_error(monkeypatch):
+    monkeypatch.delenv("SHODAN_API_KEY", raising=False)
+    client = Mock()
+
+    provider = ShodanHostProvider(client=client)
+    result = provider.lookup("8.8.8.8")
+
+    assert result.status == "auth_error"
+    assert result.error_code == "missing_api_key"
+    client.get_json.assert_not_called()
+
+
+def test_shodan_host_reads_api_key_from_environment(monkeypatch):
+    monkeypatch.setenv("SHODAN_API_KEY", "env-key")
+
+    provider = ShodanHostProvider(client=Mock())
+
+    assert provider.api_key == "env-key"
+
+
+def test_shodan_host_rate_limit_is_preserved():
+    client = Mock()
+    client.get_json.return_value = (
+        "rate_limited",
+        {},
+        "Provider returned HTTP 429.",
+    )
+
+    provider = ShodanHostProvider(api_key="secret-key", client=client)
+    result = provider.lookup("8.8.8.8")
+
+    assert result.status == "rate_limited"
+    assert result.error_code == "rate_limited"
+    assert result.normalized_data == {}
+    assert result.raw_data == {}
+    assert "secret-key" not in (result.error_message or "")
+
+
+def test_shodan_host_no_data():
+    client = Mock()
+    client.get_json.return_value = (
+        "no_data",
+        {},
+        "Provider returned HTTP 404.",
+    )
+
+    provider = ShodanHostProvider(api_key="test-key", client=client)
+    result = provider.lookup("203.0.113.10")
+
+    assert result.status == "no_data"
+    assert result.error_code is None
+    assert result.error_message is None
+    assert result.normalized_data == {}
+
+
+def test_shodan_host_rejects_unexpected_payload():
+    client = Mock()
+    client.get_json.return_value = ("success", {"org": "Google LLC"}, None)
+
+    provider = ShodanHostProvider(api_key="test-key", client=client)
+    result = provider.lookup("8.8.8.8")
+
+    assert result.status == "error"
+    assert result.error_code == "unexpected_payload"
+    assert result.normalized_data == {}
